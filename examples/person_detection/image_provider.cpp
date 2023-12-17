@@ -20,6 +20,14 @@ limitations under the License.
 
 #include "LCD_st7735.h"
 #include "arducam_hm01b0.h"
+//
+int8_t upcontrast(int8_t in_brightness, int8_t contrast){
+  int16_t range = 255;
+  int8_t out_brightness = 0;
+  return out_brightness;
+}
+//
+
 
 struct arducam_config config;
 
@@ -72,11 +80,19 @@ TfLiteStatus GetImage(tflite::ErrorReporter *error_reporter, int image_width,
 #endif
   auto    *displayBuf = new uint8_t[96 * 96 * 2];
   uint16_t index      = 0;
+    
+  printf(" \n Image start!\n");
+ 
   for (int x = 0; x < 96 * 96; x++) {
     uint16_t imageRGB   = ST7735_COLOR565(image_data[x], image_data[x], image_data[x]);
+    // previous: caused erroneous pixel brightes, due to int overflow? printf("%d ", image_data[x] /2);
     displayBuf[index++] = (uint8_t)(imageRGB >> 8) & 0xFF;
     displayBuf[index++] = (uint8_t)(imageRGB)&0xFF;
+    printf("%d ", displayBuf[index] / 3);
   }
+
+   printf("\n Halt! \n");
+
   ST7735_DrawImage(0, 0, 96, 96, displayBuf);
   delete[] displayBuf;
 #if EXECUTION_TIME

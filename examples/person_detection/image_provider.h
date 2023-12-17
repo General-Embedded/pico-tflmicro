@@ -85,4 +85,6 @@ TfLiteStatus GetImage(tflite::ErrorReporter *error_reporter, int image_width,
 
 TfLiteStatus ScreenInit(tflite::ErrorReporter *error_reporter);
 
+int8_t upcontrast(int8_t in_brightness, float contrast);
+
 #endif  // TENSORFLOW_LITE_MICRO_EXAMPLES_PERSON_DETECTION_IMAGE_PROVIDER_H_

@@ -19,6 +19,8 @@ limitations under the License.
 #include <hardware/irq.h>
 #include <hardware/uart.h>
 #include <pico/stdio_usb.h>
+#include "pico/stdlib.h"
+
 
 #include "detection_responder.h"
 #include "image_provider.h"
@@ -29,6 +31,8 @@ limitations under the License.
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
+
+#include <stdio.h>
 
 const uint LED_PIN = 25;
 #define UART_ID uart0
@@ -53,7 +57,8 @@ TfLiteTensor             *input          = nullptr;
 // signed value.
 
 // An area of memory to use for input, output, and intermediate arrays.
-constexpr int  kTensorArenaSize = 54 * 1024 + 27 * 1024;
+//constexpr int  kTensorArenaSize = 54 * 1024 + 27 * 1024;
+constexpr int  kTensorArenaSize = 130000;
 static uint8_t tensor_arena[kTensorArenaSize];
 }  // namespace
 
@@ -105,8 +110,15 @@ void setup() {
   gpio_set_dir(LED_PIN, GPIO_OUT);
   gpio_put(LED_PIN, !gpio_get(LED_PIN));
 
+   printf("setup_uart called\n");
+
   setup_uart();
+  stdio_init_all();
+  sleep_ms(3000);
+  
+   printf("stdio_usb_init called\n");
   stdio_usb_init();
+   printf("Screen init called\n");
   TfLiteStatus setup_status = ScreenInit(error_reporter);
   if (setup_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Set up failed\n");
@@ -114,11 +126,13 @@ void setup() {
   // Set up logging. Google style is to avoid globals or statics because of
   // lifetime uncertainty, but since this has a trivial destructor it's okay.
   // NOLINTNEXTLINE(runtime-global-variables)
+    printf("MicroErrorReporter constructed\n");
   static tflite::MicroErrorReporter micro_error_reporter;
   error_reporter = &micro_error_reporter;
 #if 1
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
+   printf("GetModel called\n");
   model = tflite::GetModel(g_person_detect_model_data);
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     TF_LITE_REPORT_ERROR(error_reporter,
@@ -136,19 +150,30 @@ void setup() {
   //
   // tflite::AllOpsResolver resolver;
   // NOLINTNEXTLINE(runtime-global-variables)
+   printf("Layer creators called\n");
   static tflite::MicroMutableOpResolver<5> micro_op_resolver;
+  micro_op_resolver.AddConv2D();
+    micro_op_resolver.AddMaxPool2D();
+  micro_op_resolver.AddConv2D(); // Second Conv2D layer
+
+  micro_op_resolver.AddMaxPool2D(); // Assuming you want to match each MaxPooling layer
+  micro_op_resolver.AddFullyConnected();
+  micro_op_resolver.AddSoftmax();
+  /*
   micro_op_resolver.AddAveragePool2D();
   micro_op_resolver.AddConv2D();
   micro_op_resolver.AddDepthwiseConv2D();
   micro_op_resolver.AddReshape();
   micro_op_resolver.AddSoftmax();
-
+  */
+   printf("static_interpreter called\n");
   // Build an interpreter to run the model with.
   // NOLINTNEXTLINE(runtime-global-variables)
   static tflite::MicroInterpreter static_interpreter(
     model, micro_op_resolver, tensor_arena, kTensorArenaSize, error_reporter);
   interpreter = &static_interpreter;
-
+  
+   printf("Model memory allocation called\n");
   // Allocate memory from the tensor_arena for the model's tensors.
   TfLiteStatus allocate_status = interpreter->AllocateTensors();
   if (allocate_status != kTfLiteOk) {
@@ -156,6 +181,7 @@ void setup() {
     return;
   }
 
+   printf("Memory info fetching\n");
   // Get information about the memory area to use for the model's input.
   input = interpreter->input(0);
 
@@ -199,7 +225,14 @@ void loop() {
   char array[10];
   sprintf(array, "%d%%", ((person_score + 128) * 100) >> 8);
   ST7735_FillRectangle(10, 120, ST7735_WIDTH, 40, ST7735_BLACK);
-  ST7735_WriteString(13, 120, array, Font_16x26, ST7735_GREEN, ST7735_BLACK);
+  ST7735_WriteString(13, 120, array, Font_7x10, ST7735_RED, ST7735_BLACK);
+  // Assuming input tensor data type is int8_t
+  /*  printf(" \n Image start!\n");
+  for (int i = 0; i < 9216; ++i) {
+      printf("%d ", input->data.int8[i]);
+  }
+  printf("\n Halt! \n");*/
+ 
 #endif
   TF_LITE_REPORT_ERROR(error_reporter, "**********");
 }

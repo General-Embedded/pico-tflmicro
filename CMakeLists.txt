@@ -384,10 +384,10 @@ target_sources(pico-tflmicro_test
 
 add_subdirectory(include/arducam_hm01b0)
 add_subdirectory(include/LCD_st7735)
-add_subdirectory(include/ICM42622)
-add_subdirectory(include/pico-microphone)
-add_subdirectory(include/ICM20948)
-add_subdirectory(include/arducam_mic)
+#add_subdirectory(include/ICM42622)
+#add_subdirectory(include/pico-microphone)
+#add_subdirectory(include/ICM20948)
+#add_subdirectory(include/arducam_mic)
 
 
 include_directories(include/arducam_hm01b0)
@@ -399,7 +399,7 @@ include_directories(include/arducam_mic)
 
 
 add_subdirectory("examples/person_detection")
-add_subdirectory("examples/magic_wand")
-add_subdirectory("examples/micro_speech")
-add_subdirectory("examples/magic_wand_ble")
+#add_subdirectory("examples/magic_wand")
+#add_subdirectory("examples/micro_speech")
+#add_subdirectory("examples/magic_wand_ble")
 
